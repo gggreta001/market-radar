@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>市集雷达 Market Radar</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif; background: #f5f4f0; color: #1a1a1a; }
+input, textarea, select, button { font-family: inherit; }
+
+.app { min-height: 100vh; }
+.nav { background: #fff; border-bottom: 0.5px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 10; }
+.logo { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #7F77DD; position: relative; }
+.logo-dot::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #7F77DD; top: -4px; left: -4px; opacity: 0.4; }
+.nav-tabs { display: flex; gap: 2px; }
+.tab-btn { padding: 6px 14px; border: 0.5px solid transparent; background: none; border-radius: 8px; font-size: 13px; cursor: pointer; color: #666; transition: all 0.15s; }
+.tab-btn.active { background: #f5f4f0; border-color: #e8e6e0; color: #1a1a1a; font-weight: 500; }
+.tab-btn:hover:not(.active) { background: #f5f4f0; color: #1a1a1a; }
+.content { padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.workshop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.card { background: #fff; border: 0.5px solid #e8e6e0; border-radius: 12px; padding: 1.25rem; }
+.card-title { font-size: 11px; font-weight: 500; color: #999; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.form-row { margin-bottom: 0.875rem; }
+.form-label { font-size: 12px; color: #666; margin-bottom: 4px; display: block; }
+input[type=text], textarea, select { width: 100%; font-size: 13px; padding: 7px 10px; border: 0.5px solid #e8e6e0; border-radius: 8px; background: #fff; color: #1a1a1a; outline: none; transition: border-color 0.15s; }
+input[type=text]:focus, textarea:focus, select:focus { border-color: #7F77DD; }
+textarea { resize: vertical; min-height: 72px; }
+.style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+.style-chip { padding: 6px 10px; border: 0.5px solid #e8e6e0; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; color: #666; background: #f5f4f0; transition: all 0.15s; }
+.style-chip.selected { border-color: #7F77DD; color: #534AB7; background: #EEEDFE; }
+.len-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.len-chip { padding: 4px 10px; border: 0.5px solid #e8e6e0; border-radius: 8px; font-size: 12px; cursor: pointer; color: #666; background: #f5f4f0; transition: all 0.15s; }
+.len-chip.selected { border-color: #7F77DD; color: #534AB7; background: #EEEDFE; }
+.gen-btn { width: 100%; margin-top: 1rem; padding: 9px; background: #534AB7; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+.gen-btn:hover:not(:disabled) { background: #3C3489; }
+.gen-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.output-type-row { display: flex; gap: 6px; margin-bottom: 0.875rem; flex-wrap: wrap; }
+.out-tab { padding: 5px 12px; border: 0.5px solid #e8e6e0; border-radius: 8px; font-size: 12px; cursor: pointer; color: #666; background: #f5f4f0; }
+.out-tab.active { background: #fff; border-color: #bbb; color: #1a1a1a; font-weight: 500; }
+.output-text { background: #f5f4f0; border-radius: 8px; padding: 1rem; font-size: 13px; line-height: 1.8; color: #1a1a1a; min-height: 160px; border: 0.5px solid #e8e6e0; white-space: pre-wrap; }
+.empty-hint { color: #aaa; }
+.copy-btn { margin-top: 8px; font-size: 12px; color: #666; background: none; border: 0.5px solid #e8e6e0; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+.copy-btn:hover { background: #f5f4f0; }
+
+.filter-row { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+.filter-row select { width: auto; flex: 0 0 auto; font-size: 12px; }
+.search-wrap { flex: 1; min-width: 140px; position: relative; }
+.search-wrap input { width: 100%; padding-left: 30px; }
+.search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #aaa; pointer-events: none; }
+.market-list { display: flex; flex-direction: column; gap: 10px; }
+.market-card { background: #fff; border: 0.5px solid #e8e6e0; border-radius: 12px; padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.15s; }
+.market-card:hover { border-color: #bbb; }
+.market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.market-name { font-size: 14px; font-weight: 500; }
+.market-meta { font-size: 12px; color: #888; display: flex; gap: 12px; flex-wrap: wrap; }
+.meta-item { display: flex; align-items: center; gap: 4px; }
+.status-badge { font-size: 11px; padding: 3px 9px; border-radius: 8px; font-weight: 500; flex-shrink: 0; }
+.status-open { background: #EAF3DE; color: #3B6D11; }
+.status-soon { background: #FAEEDA; color: #854F0B; }
+.status-closed { background: #f0eeea; color: #999; }
+.tags-row { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #EEEDFE; color: #534AB7; }
+
+.detail-panel { background: #fff; border: 0.5px solid #e8e6e0; border-radius: 12px; padding: 1.5rem; margin-top: 1rem; }
+.detail-close { float: right; background: none; border: none; cursor: pointer; color: #999; font-size: 18px; line-height: 1; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.detail-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+.detail-val { font-size: 13px; }
+.apply-btn { display: inline-block; padding: 8px 18px; background: #534AB7; color: white; border-radius: 8px; font-size: 13px; text-decoration: none; font-weight: 500; cursor: pointer; border: none; }
+.apply-btn:hover { background: #3C3489; }
+
+.match-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; }
+.match-result-list { display: flex; flex-direction: column; gap: 10px; }
+.match-item { background: #fff; border: 0.5px solid #e8e6e0; border-radius: 12px; padding: 1rem 1.25rem; }
+.match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.match-name { font-size: 14px; font-weight: 500; }
+.score-ring { width: 48px; height: 48px; position: relative; flex-shrink: 0; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; font-weight: 500; }
+.match-section-label { font-size: 11px; color: #aaa; margin-bottom: 3px; }
+.match-point { font-size: 12px; color: #666; padding: 2px 0; display: flex; gap: 6px; }
+.match-point::before { content: '·'; color: #7F77DD; flex-shrink: 0; font-size: 16px; line-height: 1.2; }
+.loading-hint { text-align: center; padding: 2.5rem 1rem; color: #aaa; font-size: 13px; }
+
+@media (max-width: 640px) {
+  .workshop-grid, .match-grid { grid-template-columns: 1fr; }
+  .nav-tabs .tab-btn { padding: 6px 10px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      市集雷达 Market Radar
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('workshop', this)">
+        <i class="ti ti-wand"></i> AI文案工坊
+      </button>
+      <button class="tab-btn" onclick="switchTab('radar', this)">
+        <i class="ti ti-radar"></i> 市集雷达
+      </button>
+      <button class="tab-btn" onclick="switchTab('match', this)">
+        <i class="ti ti-chart-dots"></i> 匹配分析
+      </button>
+    </div>
+  </nav>
+
+  <div class="content">
+
+    <!-- AI文案工坊 -->
+    <div id="panel-workshop" class="panel active">
+      <div class="workshop-grid">
+        <div class="card">
+          <div class="card-title">品牌信息</div>
+          <div class="form-row">
+            <label class="form-label">品牌名称</label>
+            <input type="text" id="brand-name" placeholder="例：如如不动" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">关键词（逗号分隔）</label>
+            <input type="text" id="brand-keywords" placeholder="例：东方香氛、合香珠、手作" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">产品描述</label>
+            <textarea id="brand-desc" placeholder="描述你的产品、理念、故事..."></textarea>
+          </div>
+          <div class="form-row">
+            <label class="form-label">文案风格</label>
+            <div class="style-grid" id="style-grid">
+              <div class="style-chip selected" data-v="观夏风">观夏风</div>
+              <div class="style-chip" data-v="野兽派风">野兽派风</div>
+              <div class="style-chip" data-v="山下有松风">山下有松风</div>
+              <div class="style-chip" data-v="大娃怪市风">大娃怪市风</div>
+              <div class="style-chip" data-v="天目里风">天目里风</div>
+              <div class="style-chip" data-v="东方诗意风">东方诗意风</div>
+              <div class="style-chip" data-v="极简高级风">极简高级风</div>
+              <div class="style-chip" data-v="本色市集风">本色市集风</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">字数</label>
+            <div class="len-row">
+              <div class="len-chip selected" data-v="50">50字</div>
+              <div class="len-chip" data-v="100">100字</div>
+              <div class="len-chip" data-v="150">150字</div>
+              <div class="len-chip" data-v="300">300字</div>
+            </div>
+          </div>
+          <button class="gen-btn" id="copy-btn-gen" onclick="generateCopy()">
+            <i class="ti ti-wand"></i> 生成文案
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-title">生成结果</div>
+          <div class="output-type-row" id="out-tabs">
+            <div class="out-tab active" data-t="brand">品牌介绍</div>
+            <div class="out-tab" data-t="founder">主理人介绍</div>
+            <div class="out-tab" data-t="apply">报名文案</div>
+            <div class="out-tab" data-t="xhs">小红书</div>
+          </div>
+          <div class="output-text" id="output-text">
+            <span class="empty-hint">填写左侧信息后点击生成，AI 将为你创作符合所选风格的品牌文案。</span>
+          </div>
+          <button class="copy-btn" onclick="copyOutput()">
+            <i class="ti ti-copy"></i> 复制文案
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 市集雷达 -->
+    <div id="panel-radar" class="panel">
+      <div class="filter-row">
+        <div class="search-wrap">
+          <i class="ti ti-search search-icon"></i>
+          <input type="text" id="market-search" placeholder="搜索市集名称..." oninput="filterMarkets()" />
+        </div>
+        <select id="city-filter" onchange="filterMarkets()">
+          <option value="">全部城市</option>
+          <option>北京</option><option>上海</option><option>杭州</option><option>成都</option>
+        </select>
+        <select id="status-filter" onchange="filterMarkets()">
+          <option value="">全部状态</option>
+          <option value="open">招募中</option>
+          <option value="soon">即将开始</option>
+          <option value="closed">已截止</option>
+        </select>
+      </div>
+      <div class="market-list" id="market-list"></div>
+      <div id="market-detail"></div>
+    </div>
+
+    <!-- 匹配分析 -->
+    <div id="panel-match" class="panel">
+      <div class="match-grid">
+        <div class="card">
+          <div class="card-title">品牌信息</div>
+          <div class="form-row">
+            <label class="form-label">品牌名称</label>
+            <input type="text" id="m-brand-name" placeholder="例：如如不动" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">品牌介绍</label>
+            <textarea id="m-brand-desc" placeholder="简要描述你的品牌定位、产品、风格..."></textarea>
+          </div>
+          <div class="form-row">
+            <label class="form-label">产品品类</label>
+            <input type="text" id="m-category" placeholder="例：香氛、合香珠、线香" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">品牌标签</label>
+            <input type="text" id="m-tags" placeholder="例：东方美学、手作、原创" />
+          </div>
+          <button class="gen-btn" id="match-gen-btn" onclick="analyzeMatch()">
+            <i class="ti ti-chart-dots"></i> 开始匹配分析
+          </button>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem;">匹配结果</div>
+          <div class="match-result-list" id="match-results">
+            <div class="loading-hint">填写品牌信息后开始分析，AI 将评估你与各市集的匹配程度。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const MARKETS = [
+  { id:1, name:'大娃怪市（端午北京特别版）', city:'北京', date:'2025-06-08 ~ 09', applyEnd:'2025-05-20', status:'open', fee:'800元/摊', tags:['潮玩','原创','设计师'], desc:'大娃怪市是专注于原创设计与独立品牌的高品质买手市集，汇聚全国顶尖独立设计师与原创品牌。', req:'需有原创性，不接受代工/无品牌商品。摆摊照片或作品集必须提交。', suitable:'香氛、首饰、手作、插画、文创', unsuitable:'无原创性的白牌商品' },
+  { id:2, name:'天目里市集', city:'杭州', date:'2025-07-05 ~ 06', applyEnd:'2025-06-10', status:'open', fee:'600元/摊', tags:['生活美学','东方','设计'], desc:'天目里是杭州最具影响力的生活美学类市集，主打当代东方美学与原创设计师品牌。', req:'品牌调性偏生活美学、东方或自然系。需提供品牌故事。', suitable:'香氛、茶器、手作饰品、美学生活', unsuitable:'快消品、重商业化品牌' },
+  { id:3, name:'双手做工', city:'上海', date:'2025-06-28 ~ 29', applyEnd:'2025-06-01', status:'soon', fee:'500元/摊', tags:['手工艺','手作','材料'], desc:'专注于手工艺与手作领域的垂直市集，强调材料美感与制作过程的可见性。', req:'必须为纯手工或手工辅助制作。欢迎现场制作展示。', suitable:'香囊、编织、陶瓷、布艺、皮革', unsuitable:'机器批量生产的商品' },
+  { id:4, name:'本色市集', city:'成都', date:'2025-08-16 ~ 17', applyEnd:'2025-07-20', status:'soon', fee:'400元/摊', tags:['市井','本土','生活'], desc:'本色市集以成都本土文化为底色，汇聚本地原创品牌，强调真实生活美学。', req:'鼓励有本土故事的品牌，风格自然朴素。', suitable:'本地文创、手作、食品、生活器物', unsuitable:'网红流量型品牌' },
+  { id:5, name:'山下有松·自然市集', city:'上海', date:'2025-05-10 ~ 11', applyEnd:'2025-04-01', status:'closed', fee:'700元/摊', tags:['自然','植物','疗愈'], desc:'以自然与植物为主题的生活方式市集，强调可持续和疗愈系生活方式。', req:'产品需与自然、植物、疗愈相关。', suitable:'草本香氛、植物染、天然材料手作', unsuitable:'与自然主题无关的产品' },
+];
+
+let selectedStyle = '观夏风';
+let selectedLen = '50';
+let currentOutputs = {};
+let activeOutTab = 'brand';
+
+// 风格/字数选择
+document.querySelectorAll('.style-chip').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.style-chip').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedStyle = el.dataset.v;
+  });
+});
+document.querySelectorAll('.len-chip').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.len-chip').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedLen = el.dataset.v;
+  });
+});
+document.querySelectorAll('#out-tabs .out-tab').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#out-tabs .out-tab').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    activeOutTab = el.dataset.t;
+    renderOutput();
+  });
+});
+
+function switchTab(t, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + t).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ← 唯一改动：所有 Claude API 请求改走 /api/claude
+async function callClaude(prompt) {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await res.json();
+  return data.content.map(i => i.text || '').join('');
+}
+
+function renderOutput() {
+  const el = document.getElementById('output-text');
+  if (currentOutputs[activeOutTab]) {
+    el.textContent = currentOutputs[activeOutTab];
+  } else {
+    el.innerHTML = '<span class="empty-hint">填写左侧信息后点击生成，AI 将为你创作符合所选风格的品牌文案。</span>';
+  }
+}
+
+async function generateCopy() {
+  const name = document.getElementById('brand-name').value.trim();
+  const keywords = document.getElementById('brand-keywords').value.trim();
+  const desc = document.getElementById('brand-desc').value.trim();
+  if (!name) { alert('请填写品牌名称'); return; }
+
+  const btn = document.getElementById('copy-btn-gen');
+  btn.textContent = '生成中...';
+  btn.disabled = true;
+  document.getElementById('output-text').innerHTML = '<span class="empty-hint">AI 正在创作...</span>';
+
+  const prompt = `你是一位专业的原创品牌文案师，擅长为手作、设计师品牌创作符合特定市集调性的文案。
+
+品牌名称：${name}
+关键词：${keywords || '未填写'}
+产品描述：${desc || '未填写'}
+风格要求：${selectedStyle}
+字数要求：每段约${selectedLen}字
+
+请生成以下四种文案，用JSON格式返回，key为brand/founder/apply/xhs：
+- brand：品牌介绍（用第三人称）
+- founder：主理人介绍（用第一人称，有温度）
+- apply：市集报名文案（专业、有说服力，强调原创性和品牌故事）
+- xhs：小红书推广文案（有话题感，带#标签，适合年轻消费者）
+
+要求：文案要有东方美学意境，避免空洞套话，突出品牌独特性。只返回JSON，不要其他内容。`;
+
+  try {
+    const text = await callClaude(prompt);
+    const clean = text.replace(/```json|```/g, '').trim();
+    currentOutputs = JSON.parse(clean);
+    renderOutput();
+  } catch(e) {
+    document.getElementById('output-text').innerHTML = '<span style="color:#c0392b">生成失败，请稍后重试</span>';
+  }
+  btn.innerHTML = '<i class="ti ti-wand"></i> 生成文案';
+  btn.disabled = false;
+}
+
+function copyOutput() {
+  const text = document.getElementById('output-text').textContent;
+  if (!text || text.includes('填写左侧')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.innerHTML = '<i class="ti ti-check"></i> 已复制';
+    setTimeout(() => { btn.innerHTML = '<i class="ti ti-copy"></i> 复制文案'; }, 1500);
+  });
+}
+
+function renderMarkets(list) {
+  const el = document.getElementById('market-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="loading-hint">暂无符合条件的市集</div>';
+    return;
+  }
+  el.innerHTML = list.map(m => `
+    <div class="market-card" onclick="showMarket(${m.id})">
+      <div class="market-header">
+        <div class="market-name">${m.name}</div>
+        <span class="status-badge status-${m.status}">${{open:'招募中',soon:'即将开始',closed:'已截止'}[m.status]}</span>
+      </div>
+      <div class="market-meta">
+        <span class="meta-item"><i class="ti ti-map-pin"></i>${m.city}</span>
+        <span class="meta-item"><i class="ti ti-calendar"></i>${m.date}</span>
+        <span class="meta-item"><i class="ti ti-clock"></i>截止 ${m.applyEnd}</span>
+        <span class="meta-item"><i class="ti ti-currency-yen"></i>${m.fee}</span>
+      </div>
+      <div class="tags-row">${m.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function filterMarkets() {
+  const q = document.getElementById('market-search').value.toLowerCase();
+  const city = document.getElementById('city-filter').value;
+  const status = document.getElementById('status-filter').value;
+  const filtered = MARKETS.filter(m =>
+    (!q || m.name.toLowerCase().includes(q)) &&
+    (!city || m.city === city) &&
+    (!status || m.status === status)
+  );
+  renderMarkets(filtered);
+  document.getElementById('market-detail').innerHTML = '';
+}
+
+function showMarket(id) {
+  const m = MARKETS.find(x => x.id === id);
+  document.getElementById('market-detail').innerHTML = `
+    <div class="detail-panel">
+      <button class="detail-close" onclick="document.getElementById('market-detail').innerHTML=''"><i class="ti ti-x"></i></button>
+      <div style="font-size:17px;font-weight:500;margin-bottom:0.5rem;">${m.name}</div>
+      <div class="tags-row" style="margin-bottom:1rem;">${m.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <p style="font-size:13px;line-height:1.8;color:#555;margin-bottom:1rem;">${m.desc}</p>
+      <div class="detail-grid">
+        <div><div class="detail-label">城市</div><div class="detail-val">${m.city}</div></div>
+        <div><div class="detail-label">举办时间</div><div class="detail-val">${m.date}</div></div>
+        <div><div class="detail-label">报名截止</div><div class="detail-val">${m.applyEnd}</div></div>
+        <div><div class="detail-label">摊位费</div><div class="detail-val">${m.fee}</div></div>
+      </div>
+      <div style="margin:1rem 0;background:#f5f4f0;border-radius:8px;padding:0.875rem;">
+        <div class="detail-label" style="margin-bottom:5px;">招募要求</div>
+        <div style="font-size:13px;color:#555;line-height:1.7;">${m.req}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:#EAF3DE;border-radius:8px;padding:0.75rem;">
+          <div style="font-size:11px;color:#3B6D11;margin-bottom:4px;font-weight:500;">✓ 适合品类</div>
+          <div style="font-size:12px;color:#3B6D11;">${m.suitable}</div>
+        </div>
+        <div style="flex:1;background:#FCEBEB;border-radius:8px;padding:0.75rem;">
+          <div style="font-size:11px;color:#A32D2D;margin-bottom:4px;font-weight:500;">✗ 不适合</div>
+          <div style="font-size:12px;color:#A32D2D;">${m.unsuitable}</div>
+        </div>
+      </div>
+      <div style="margin-top:1.25rem;text-align:right;">
+        <button class="apply-btn" onclick="goGenerateApply('${m.name}')">生成报名文案 →</button>
+      </div>
+    </div>`;
+  document.getElementById('market-detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function goGenerateApply(marketName) {
+  switchTab('workshop', document.querySelectorAll('.tab-btn')[0]);
+  document.getElementById('brand-keywords').value = document.getElementById('brand-keywords').value || '东方香氛、合香珠、手作';
+  document.getElementById('output-text').innerHTML = `<span class="empty-hint">已切换到文案工坊，填写品牌信息后生成「${marketName}」报名文案。</span>`;
+}
+
+async function analyzeMatch() {
+  const name = document.getElementById('m-brand-name').value.trim();
+  const desc = document.getElementById('m-brand-desc').value.trim();
+  const cat = document.getElementById('m-category').value.trim();
+  const tags = document.getElementById('m-tags').value.trim();
+  if (!name) { alert('请填写品牌名称'); return; }
+
+  const btn = document.getElementById('match-gen-btn');
+  btn.textContent = '分析中...';
+  btn.disabled = true;
+  document.getElementById('match-results').innerHTML = '<div class="loading-hint">AI 正在分析匹配度...</div>';
+
+  const markets = MARKETS.map(m => `${m.name}（${m.city}）：${m.desc} 适合：${m.suitable}`).join('\n');
+  const prompt = `你是一位市集顾问，熟悉中国独立品牌市集生态。
+
+品牌名称：${name}
+品牌介绍：${desc || '未填写'}
+产品品类：${cat || '未填写'}
+品牌标签：${tags || '未填写'}
+
+以下是5个市集：
+${markets}
+
+分析该品牌与每个市集的匹配度，返回JSON数组，每项包含：
+- name: 市集名称
+- score: 匹配度0-100整数
+- pros: 优势2-3条，每条不超过20字
+- cons: 风险1-2条，每条不超过20字
+- suggestion: 核心建议一条，不超过30字
+
+只返回JSON数组，不要其他内容。`;
+
+  try {
+    const text = await callClaude(prompt);
+    const clean = text.replace(/```json|```/g, '').trim();
+    const results = JSON.parse(clean);
+    results.sort((a, b) => b.score - a.score);
+    renderMatchResults(results);
+  } catch(e) {
+    document.getElementById('match-results').innerHTML = '<div style="color:#c0392b;font-size:13px;padding:1rem;">分析失败，请稍后重试</div>';
+  }
+  btn.innerHTML = '<i class="ti ti-chart-dots"></i> 开始匹配分析';
+  btn.disabled = false;
+}
+
+function renderMatchResults(results) {
+  const colors = ['#7F77DD','#1D9E75','#BA7517','#D85A30','#888780'];
+  document.getElementById('match-results').innerHTML = results.map((r, i) => {
+    const c = colors[i] || colors[4];
+    const circ = Math.round(2 * Math.PI * 18);
+    const dash = Math.round(circ * r.score / 100);
+    return `<div class="match-item">
+      <div class="match-header">
+        <div>
+          <div class="match-name">${r.name}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">${r.suggestion}</div>
+        </div>
+        <div class="score-ring">
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="18" fill="none" stroke="#eee" stroke-width="3"/>
+            <circle cx="24" cy="24" r="18" fill="none" stroke="${c}" stroke-width="3"
+              stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+          </svg>
+          <div class="score-text" style="color:${c}">${r.score}%</div>
+        </div>
+      </div>
+      <div class="match-section-label">优势</div>
+      ${r.pros.map(p => `<div class="match-point">${p}</div>`).join('')}
+      ${r.cons.length ? `<div class="match-section-label" style="margin-top:6px;">风险</div>${r.cons.map(p=>`<div class="match-point" style="color:#aaa">${p}</div>`).join('')}` : ''}
+    </div>`;
+  }).join('');
+}
+
+renderMarkets(MARKETS);
+</script>
+</body>
+</html>
